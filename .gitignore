@@ -1,0 +1,40 @@
+# npm
+node_modules/
+
+# build
+lib/
+dist/
+build/
+*.tsbuildinfo
+
+# runtimes
+model*/
+data/
+.cache/
+
+# Logs
+logs/
+*.log
+
+# config
+config/
+config.json*
+!config.json.example
+
+# tmp
+tmp/
+.tmp/
+temp/
+*.tmp
+*.bak*
+
+# agent / tooling 状态
+.agent-teams/
+.codegraph/
+
+# os
+.DS_Store
+
+# ides
+.idea/
+.vscode/
