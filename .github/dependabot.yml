@@ -1,0 +1,53 @@
+version: 2
+
+updates:
+  # npm 依赖：每周检查一次
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      # 补丁与小版本合并成一个 PR，减少噪音
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      # 宿主 peer 依赖单独分组：dsh 生态需同步升级
+      dsh-peer:
+        patterns:
+          - "@deepseek-ai/*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # node-llama-cpp 锁定在支持 gemma-embedding2 的版本前不自动跳大版本
+      - dependency-name: "node-llama-cpp"
+        update-types:
+          - "version-update:semver-major"
+
+  # GitHub Actions 自身版本
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
