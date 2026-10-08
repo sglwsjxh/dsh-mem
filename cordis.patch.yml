@@ -1,0 +1,5 @@
+# dsh-mem bundle 层：加载 lib/index.js 作为宿主侧 cordis 服务
+- insert:
+    - id: dsh-mem
+      name: dsh-mem
+      config: {}
