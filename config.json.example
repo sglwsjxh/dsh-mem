@@ -1,0 +1,86 @@
+{
+    // ============================================================
+    // dsh-mem 配置示例：复制为 config.jsonc 后修改
+    //   cp config.json.example config.jsonc
+    // 优先从 dsh 工作区根目录读取，回退到 ~/.dsh/dsh-mem.jsonc
+    // ============================================================
+
+    // 向量数据目录，默认 ./data
+    "datapath": "./data",
+
+    // ------------------------------------------------------------
+    // 嵌入模型：一个 model 字符串决定来源
+    //   "https://..." 或不带前缀的 OpenAI 兼容模型名 —— 远程 /v1/embeddings 端点
+    //   "file://./models/xxx"  —— 本地目录（ONNX 模型目录或 .gguf 文件）
+    //   "hf://org/model"       —— Hugging Face（先查 HF 缓存 ~/.cache/huggingface/，没有自动下载）
+    //   "ms://org/model"       —— ModelScope（先查 MS 缓存，没有自动下载）
+    //
+    // 缓存位置由 HF_HOME / HF_HUB_CACHE / MODELSCOPE_CACHE 环境变量决定，
+    // 插件只读取定位，不代管缓存；下载由 transformers.js / uvx 各自完成。
+    //
+    // apikey/baseurl 仅远程模型需要；本地与 hf/ms 忽略
+    // dimensions 可选：不填则首次 embed 自动探测并持久化到 datapath/meta.json
+    // 填了则截断到该维度并重新归一化（MRL 模型可用 768/512/256/128 等档位）
+    // ------------------------------------------------------------
+    "embedding": {
+        "model": "YOUR_MODEL_NAME",
+        // "model": "file://./models/google/embeddinggemma-2",
+        // "model": "hf://google/embeddinggemma-2",
+        // "model": "ms://google/embeddinggemma-2",
+        "baseurl": "YOUR_BASE_URL",
+        "apikey": "YOUR_API_KEY",
+        "dimensions": 2048
+    },
+
+    // ------------------------------------------------------------
+    // 内部 LLM（自动捕获总结、画像学习用）
+    // platform: openai | anthropic | gemini —— 三种 API 调用风格
+    // baseUrl: 端点（本地服务填 127.0.0.1 即可）
+    // apiKey: 支持 env://NAME、file:///path、明文
+    // ------------------------------------------------------------
+    "llm": {
+        "platform": "openai",
+        // "platform": "anthropic",
+        // "platform": "gemini",
+        "baseUrl": "https://api.openai.com/v1",
+        "model": "YOUR_MODEL_NAME",
+        "apiKey": "YOUR_API_KEY",
+        // "apiKey": "env://OPENAI_API_KEY",
+        "timeoutMs": 90000
+    },
+
+    // 自动捕获：会话轮结束后由 LLM 总结技术对话
+    "autoCaptureEnabled": true,
+    "autoCaptureMaxRetries": 3,
+    "autoCaptureMaxContext": 131072,
+
+    // 记忆
+    "similarityThreshold": 0.8,
+    "maxMemories": 10,
+    // 搜索与列表的默认范围：project（仅当前项目）| all（跨全部项目，含 user 分片）
+    "memoryDefaultScope": "project",
+    // "memoryDefaultScope": "project",
+
+    // 去重（相似度阈值越高越严格）
+    "deduplicationEnabled": true,
+    "deduplicationSimilarityThreshold": 0.9,
+
+    // 自动清理（仅清理 project 类别记忆）
+    "autoCleanupEnabled": true,
+    "autoCleanupRetentionDays": 30,
+
+    // 每分片最大向量数（超过自动建新分片）
+    "maxVectorsPerShard": 50000,
+
+    // 注入：新会话/压缩后把相关记忆注入上下文
+    "injectEnabled": true,
+    "injectMaxMemories": 3,
+    "injectExcludeCurrentSession": true,
+    "injectProfile": true,
+
+    // 用户画像学习
+    "userProfileEnabled": true,
+    "userProfileAnalysisInterval": 10,
+    "userProfileMaxContext": 32768,
+    "userProfileStaleDays": 2
+}
