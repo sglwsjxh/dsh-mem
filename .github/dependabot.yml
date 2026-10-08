@@ -11,6 +11,10 @@ updates:
       timezone: "Asia/Shanghai"
     open-pull-requests-limit: 5
     versioning-strategy: increase
+    # 新版本发布后等待 7 天再升级：dependabot 自身有 3 天冷却期，
+    # 若 lockfile 里 pin 了刚发布几天的版本，其解析会失败（typescript-eslint 曾触发）
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
     commit-message:
@@ -36,6 +40,10 @@ updates:
       - dependency-name: "node-llama-cpp"
         update-types:
           - "version-update:semver-major"
+      # typescript-eslint 与 typescript 强耦合，避免解析期 peer 冲突
+      - dependency-name: "typescript-eslint"
+        update-types:
+          - "version-update:semver-major"
 
   # GitHub Actions 自身版本
   - package-ecosystem: "github-actions"
@@ -45,6 +53,8 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Shanghai"
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "github-actions"
