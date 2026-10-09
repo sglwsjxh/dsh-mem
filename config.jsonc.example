@@ -1,0 +1,78 @@
+{
+    // ============================================================
+    // dsh-mem 配置示例：复制到 ~/.dsh/dsh-mem.jsonc 后修改
+    //   cp config.jsonc.example ~/.dsh/dsh-mem.jsonc
+    // 这是唯一会被读取的配置路径；文件缺失时插件会在 stderr 报错
+    // ============================================================
+
+    // 向量数据目录；相对路径相对 ~/.dsh 解析
+    "datapath": "./data",
+
+    // ------------------------------------------------------------
+    // 嵌入模型：只支持 OpenAI 兼容 /v1/embeddings 端点
+    // 本地模型（GGUF / llama.cpp server、ONNX）请自行启动 OpenAI 兼容服务
+    //   例：llama-server --embedding -m model.gguf --port 8080
+    //   然后填 "baseurl": "http://127.0.0.1:8080/v1"
+    // apikey 仅在端点需要时填写；dimensions 可选，填了直接透传给 API
+    // ------------------------------------------------------------
+    "embedding": {
+        "model": "YOUR_MODEL_NAME",
+        // "model": "nvidia/nemotron-3-embed-1b:free",
+        "baseurl": "YOUR_BASE_URL",
+        // "baseurl": "https://openrouter.ai/api/v1",
+        "apikey": "YOUR_API_KEY",
+        // "apikey": "env://OPENAI_API_KEY"
+        "dimensions": 2048
+    },
+
+    // ------------------------------------------------------------
+    // 内部 LLM（自动捕获总结、画像学习用）
+    // platform: openai | anthropic | gemini —— 三种 API 调用风格
+    // baseUrl: 端点（本地 llama.cpp server 填 http://127.0.0.1:8080/v1）
+    // apiKey: 支持 env://NAME、file:///path、明文
+    // ------------------------------------------------------------
+    "llm": {
+        "platform": "openai",
+        // "platform": "anthropic",
+        // "platform": "gemini",
+        "baseUrl": "https://api.openai.com/v1",
+        "model": "YOUR_MODEL_NAME",
+        "apiKey": "YOUR_API_KEY",
+        // "apiKey": "env://OPENAI_API_KEY",
+        "timeoutMs": 90000
+    },
+
+    // 自动捕获：会话轮结束后由 LLM 总结技术对话
+    "autoCaptureEnabled": true,
+    "autoCaptureMaxRetries": 3,
+    "autoCaptureMaxContext": 131072,
+
+    // 记忆
+    "similarityThreshold": 0.5,
+    "maxMemories": 10,
+    // 搜索与列表的默认范围：project（仅当前项目）| all（跨全部项目，含 user 分片）
+    "memoryDefaultScope": "project",
+
+    // 去重（相似度阈值越高越严格）
+    "deduplicationEnabled": true,
+    "deduplicationSimilarityThreshold": 0.85,
+
+    // 自动清理（仅清理 project 类别记忆）
+    "autoCleanupEnabled": true,
+    "autoCleanupRetentionDays": 30,
+
+    // 每分片最大向量数（超过自动建新分片）
+    "maxVectorsPerShard": 50000,
+
+    // 注入：新会话/压缩后把相关记忆注入上下文
+    "injectEnabled": true,
+    "injectMaxMemories": 3,
+    "injectExcludeCurrentSession": true,
+    "injectProfile": true
+
+    // 用户画像学习
+    // "userProfileEnabled": true,
+    // "userProfileAnalysisInterval": 10,
+    // "userProfileMaxContext": 32768,
+    // "userProfileStaleDays": 2
+}

@@ -1,0 +1,6 @@
+# dsh-mem bundle 层：加载包入口 dist/index.mjs 作为宿主侧 cordis 服务
+# 入口由 package.json 的 main/exports 决定；禁止 default 导出（见 scripts/verify-entry.mjs）
+- insert:
+    - id: dsh-mem
+      name: dsh-mem
+      config: {}
