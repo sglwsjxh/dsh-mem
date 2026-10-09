@@ -1,0 +1,19 @@
+* text=auto eol=lf
+
+*.ts text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.jsonc text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.example text eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.db binary
+*.gguf binary
+*.onnx binary
+*.safetensors binary

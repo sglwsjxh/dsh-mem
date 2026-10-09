@@ -33,9 +33,6 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      - dependency-name: "node-llama-cpp"
-        update-types:
-          - "version-update:semver-major"
       - dependency-name: "typescript-eslint"
         update-types:
           - "version-update:semver-major"
