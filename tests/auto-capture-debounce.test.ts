@@ -49,7 +49,7 @@ function makeCfg(dataPath: string): DshMemConfig {
     memoryDefaultScope: "project",
     deduplicationEnabled: true,
     deduplicationSimilarityThreshold: 0.85,
-    autoCleanupEnabled: true,
+    autoCleanupEnabled: false, // 关闭自动清理，避免 6h 定时器干扰 fakeTimers 计数
     autoCleanupRetentionDays: 30,
     maxVectorsPerShard: 50000,
     injectEnabled: true,

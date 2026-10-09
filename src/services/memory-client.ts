@@ -228,9 +228,35 @@ export class LocalMemoryClient {
       }
 
       const { scope, hash } = extractScopeFromContainerTag(containerTag);
+      const cfg = getConfig();
 
       return await tursoShardManager.withScopeWriteLock(scope, hash, async () => {
         const shard = await tursoShardManager.getWriteShard(scope, hash);
+
+        // 自动去重：写入前查同容器最相似记忆，超阈值拒绝写入
+        if (cfg.deduplicationEnabled) {
+          const { results } = await tursoVectorSearch.searchAcrossShards(
+            [shard],
+            vector,
+            containerTag,
+            1,
+            0,
+            "",
+          );
+          const top = results[0];
+          if (top && top.similarity >= cfg.deduplicationSimilarityThreshold) {
+            log("addMemory: duplicate rejected", {
+              memoryId: top.id,
+              similarity: Math.round(top.similarity * 100),
+            });
+            return {
+              success: true as const,
+              id: top.id,
+              duplicate: true as const,
+              similarity: top.similarity,
+            };
+          }
+        }
 
         const id = `mem_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         const now = Date.now();

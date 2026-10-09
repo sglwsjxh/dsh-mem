@@ -281,6 +281,34 @@ export function apply(ctx: Context, config?: DshMemPluginOptions): void {
   let cachedAt = 0;
   const CONTEXT_CACHE_TTL_MS = 30000;
 
+  // 自动清理：定时删除过期 prompt 与过期记忆，按 autoCleanupRetentionDays 天
+  const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
+  const cleanupTimer = cfg.autoCleanupEnabled
+    ? setInterval(() => {
+        void runAutoCleanup();
+      }, CLEANUP_INTERVAL_MS)
+    : null;
+  if (cleanupTimer) cleanupTimer.unref?.();
+
+  async function runAutoCleanup(): Promise<void> {
+    if (disposed) return;
+    const cutoff = Date.now() - cfg.autoCleanupRetentionDays * 86400000;
+    try {
+      const deletedPrompts = await userPromptStore.deleteOldPrompts(cutoff);
+      if (deletedPrompts > 0) log("auto cleanup prompts", { deleted: deletedPrompts });
+      const activeTags = getActiveTags();
+      const listResult = await deps.memoryClient.listMemories(activeTags.project.tag, 1000);
+      if (!listResult.success) return;
+      const stale = listResult.memories.filter((m) => m.createdAt < cutoff);
+      for (const m of stale) {
+        const del = await deps.memoryClient.deleteMemory(m.id);
+        if (del.success) log("auto cleanup memory", { memoryId: m.id });
+      }
+    } catch (error) {
+      log("auto cleanup failed", { error: String(error) });
+    }
+  }
+
   const disposeContext = ctx.systemPrompt.context({
     name: "dsh-mem:memory-context",
     order: 400,
@@ -343,6 +371,7 @@ export function apply(ctx: Context, config?: DshMemPluginOptions): void {
     return async () => {
       disposed = true;
       lifetime.abort();
+      if (cleanupTimer) clearInterval(cleanupTimer);
       for (const timer of idleTimers.values()) clearTimeout(timer);
       idleTimers.clear();
       pendingContexts.clear();
