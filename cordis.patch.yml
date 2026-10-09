@@ -2,5 +2,5 @@
 # 入口由 package.json 的 main/exports 决定；禁止 default 导出（见 scripts/verify-entry.mjs）
 - insert:
     - id: dsh-mem
-      name: dsh-mem
+      name: '@sglwsjxh/dsh-mem'
       config: {}

@@ -1,5 +1,5 @@
 {
-  "name": "dsh-mem",
+  "name": "@sglwsjxh/dsh-mem",
   "version": "0.1.0",
   "description": "A memory plugin for dsh, storing memories via RAG vector storage",
   "type": "module",
@@ -45,6 +45,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sglwsjxh/dsh-mem.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dsh": {
     "bundle": {

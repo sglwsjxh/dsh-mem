@@ -8,6 +8,12 @@ DeepSeek Harness (dsh) 持久记忆插件，用本地向量数据库给编码智
 - dsh >= 0.2.0-rc.1
 - Windows：VC++ 2015+ 运行库（@tursodatabase/database 需要）
 
+## 安装
+
+```powershell
+dsh plugin --profile web add @sglwsjxh/dsh-mem@latest
+```
+
 ## 源码克隆
 
 ```powershell
