@@ -1,6 +1,6 @@
 {
   "name": "dsh-mem",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A memory plugin for dsh, storing memories via RAG vector storage",
   "type": "module",
   "main": "dist/index.mjs",

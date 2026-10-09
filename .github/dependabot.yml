@@ -1,7 +1,6 @@
 version: 2
 
 updates:
-  # npm 依赖：每周检查一次
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -11,8 +10,6 @@ updates:
       timezone: "Asia/Shanghai"
     open-pull-requests-limit: 5
     versioning-strategy: increase
-    # 新版本发布后等待 7 天再升级：dependabot 自身有 3 天冷却期，
-    # 若 lockfile 里 pin 了刚发布几天的版本，其解析会失败（typescript-eslint 曾触发）
     cooldown:
       default-days: 7
     labels:
@@ -21,16 +18,12 @@ updates:
       prefix: "chore"
       include: "scope"
     groups:
-      # 注意顺序：GitHub 按声明顺序匹配，一个依赖只进第一个命中的组。
-      # dsh-peer 必须在前，否则会被 patterns:"*" 的 minor-and-patch 全部收走。
-      # 宿主 peer 依赖单独分组：dsh 生态需同步升级
       dsh-peer:
         patterns:
           - "@deepseek-ai/*"
         update-types:
           - "minor"
           - "patch"
-      # 补丁与小版本合并成一个 PR，减少噪音
       minor-and-patch:
         patterns:
           - "*"
@@ -40,16 +33,13 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      # node-llama-cpp 锁定在支持 gemma-embedding2 的版本前不自动跳大版本
       - dependency-name: "node-llama-cpp"
         update-types:
           - "version-update:semver-major"
-      # typescript-eslint 与 typescript 强耦合，避免解析期 peer 冲突
       - dependency-name: "typescript-eslint"
         update-types:
           - "version-update:semver-major"
 
-  # GitHub Actions 自身版本
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
