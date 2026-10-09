@@ -1,7 +1,25 @@
-// 宿主集成层对并行模块的接口占位：core/engine 落地后按同签名导出即可无缝对接
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 宿主集成层接口占位，core 落地后按同签名替换
 import type { MemoryRecord, MemorySearchResult, ProjectTags, UserProfileRecord, UserProfileData } from "../types.js";
 
-/** LocalMemoryClient 最小接口（core 模块交付后 import 实现替换） */
+/** 存储客户端最小接口 */
 export interface MemoryClientLike {
   warmup(): Promise<void>;
   isReady(): boolean;
@@ -45,7 +63,7 @@ export interface MemoryClientLike {
   close(): Promise<void>;
 }
 
-/** getTags 返回形状（core 模块交付后 import 实现替换） */
+/** getTags 返回形状 */
 export interface TagsLike {
   user: ProjectTags["user"];
   project: ProjectTags["project"];

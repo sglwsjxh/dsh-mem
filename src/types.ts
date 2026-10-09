@@ -1,41 +1,56 @@
-// dsh-mem 共享类型契约：所有模块与测试共同依赖的接口
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 
-// ============ 嵌入模型配置 ============
+// 共享类型契约，模块与测试共同依赖
 
-/** 嵌入模型配置（config.jsonc 的 embedding 段）；只支持远程 OpenAI 兼容端点 */
+// ---- 嵌入模型配置 ----
+
+/** 嵌入模型配置，只支持远程 OpenAI 兼容端点 */
 export interface EmbeddingConfig {
-  /** 模型名（openai 兼容；llama.cpp server 等本地服务也用 OpenAI 兼容模型名） */
+  /** OpenAI 兼容模型名，本地服务同样如此 */
   model: string;
   /** 端点，如 https://api.openai.com/v1 或 http://127.0.0.1:8080/v1 */
   baseUrl: string;
-  /** API Key，支持 env://NAME / file:///path / 明文 */
+  /** 支持 env://NAME 与 file:///path 与明文 */
   apiKey?: string;
-  /** 向量维度；配置了就直接透传给 API，不做本地探测与截断 */
+  /** 向量维度，配置后直接透传 API，不做本地探测与截断 */
   dimensions?: number;
 }
 
-// ============ LLM ============
+// ---- LLM ----
 
-/** LLM 平台风格 */
 export type LlmPlatform = "openai" | "anthropic" | "gemini";
 
-/** 内部 LLM（自动捕获/画像学习）配置 */
+/** 内部 LLM 配置，用于自动捕获与画像学习 */
 export interface LlmConfig {
-  /** openai | anthropic | gemini 三种 API 风格 */
   platform: LlmPlatform;
   /** 端点，如 https://api.openai.com/v1 */
   baseUrl: string;
-  /** 模型名 */
   model: string;
-  /** API Key，支持 env://NAME / file:///path / 明文 */
+  /** 支持 env://NAME 与 file:///path 与明文 */
   apiKey: string;
-  /** 请求超时毫秒 */
+  /** 超时毫秒 */
   timeoutMs: number;
 }
 
-// ============ 记忆 ============
+// ---- 记忆 ----
 
-/** 全量配置（~/.dsh/dsh-mem.jsonc 归一后的形态） */
+/** 全量配置，dsh-mem.jsonc 归一后形态 */
 export interface DshMemConfig {
   dataPath: string;
   embedding: EmbeddingConfig;
@@ -64,10 +79,10 @@ export interface DshMemConfig {
 
 export type MemoryType = string;
 
-/** 记忆检索范围：project 仅当前项目，all 跨全部项目（含 user 分片） */
+/** 检索范围：project 仅当前项目，all 跨全部项目含 user 分片 */
 export type MemoryScope = "project" | "all";
 
-/** 一条记忆（对外形态） */
+/** 一条记忆的对外形态 */
 export interface MemoryRecord {
   id: string;
   content: string;
@@ -87,7 +102,6 @@ export interface MemoryRecord {
   isPinned?: boolean;
 }
 
-/** 搜索结果条目 */
 export interface MemorySearchResult {
   id: string;
   memory: string;
@@ -98,9 +112,9 @@ export interface MemorySearchResult {
   containerTag: string;
 }
 
-// ============ 项目标签 ============
+// ---- 项目标签 ----
 
-/** 项目身份标签（容器标签 + 用户信息） */
+/** 项目身份标签，含容器标签与用户信息 */
 export interface ProjectTags {
   project: {
     tag: string;
@@ -117,7 +131,7 @@ export interface ProjectTags {
   };
 }
 
-// ============ 自动捕获 ============
+// ---- 自动捕获 ----
 
 /** LLM 产出的总结结构 */
 export interface CaptureSummary {
@@ -126,7 +140,7 @@ export interface CaptureSummary {
   tags: string[];
 }
 
-// ============ 用户画像 ============
+// ---- 用户画像 ----
 
 export interface ProfilePreference {
   category: string;
@@ -161,7 +175,6 @@ export interface UserProfileData {
   workflows: ProfileWorkflow[];
 }
 
-/** 用户画像记录 */
 export interface UserProfileRecord {
   id: string;
   userId: string;
@@ -175,30 +188,28 @@ export interface UserProfileRecord {
   updatedAt: number;
 }
 
-// ============ 嵌入服务接口 ============
+// ---- 嵌入服务接口 ----
 
-/** Embedder 接口：远程 OpenAI 兼容实现 */
+/** 嵌入服务接口，远程 OpenAI 兼容实现 */
 export interface Embedder {
-  /** 首次真实 API 探测；幂等，失败置 initError 后拒绝重试 */
+  /** 首次真实 API 探测。幂等，失败置 initError 后不再重试 */
   warmup(progressCallback?: (progress: unknown) => void): Promise<void>;
-  /** 生成向量（API 返回的向量原样使用） */
+  /** 生成向量，API 返回值原样使用 */
   embed(text: string): Promise<Float32Array>;
-  /** 是否就绪 */
   isReady(): boolean;
-  /** 初始化错误（fail-fast 语义） */
+  /** 初始化错误，fail-fast 语义 */
   initError: string | null;
-  /** 释放资源 */
   dispose(): Promise<void>;
 }
 
-// ============ LLM 客户端接口 ============
+// ---- LLM 客户端接口 ----
 
 export interface LlmMessage {
   role: "user" | "assistant";
   content: string;
 }
 
-/** 内部 LLM 客户端：openai/anthropic/gemini 三风格实现共用 */
+/** 内部 LLM 客户端，openai 与 anthropic 与 gemini 三风格共用 */
 export interface LlmClient {
   /** 单轮请求，返回 assistant 文本 */
   complete(messages: LlmMessage[], system?: string): Promise<string>;

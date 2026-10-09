@@ -1,4 +1,22 @@
-// user-prompt 持久化：独立 SQLite 文件，claim / capture_attempts 语义与 opencode-mem 对齐
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// user-prompt 持久化：独立 SQLite，claim 与 capture_attempts 语义
 import { connect, type Database } from "@tursodatabase/database";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -7,7 +25,7 @@ import { log } from "./logger.js";
 
 const USER_PROMPTS_DB_NAME = "user-prompts.db";
 
-/** captured: 0=待捕获 1=已捕获 2=进行中（进程内/跨进程 claim） */
+/** captured: 0 待捕获 1 已捕获 2 进行中，进程内或跨进程 claim */
 export interface UserPrompt {
   id: string;
   sessionId: string;
@@ -60,7 +78,7 @@ function rowToPrompt(row: Record<string, unknown>): UserPrompt {
 export class UserPromptStore {
   private db: Database | null = null;
   private initPromise: Promise<void> | null = null;
-  /** 显式数据目录（测试注入用）；未传则首次使用时按生效配置解析 */
+  /** 显式数据目录，测试注入用；未传则首次使用时按生效配置解析 */
   private readonly explicitDataPath?: string;
   private dbPath: string | null = null;
 
@@ -70,7 +88,7 @@ export class UserPromptStore {
 
   /**
    * 延迟解析 dbPath：模块级单例在 import 时构造，那时 initConfig 还没跑，
-   * 构造期取 dataPath 会绑到进程 cwd（宿主从别处启动就写错地方且静默失败）。
+   * 构造期取 dataPath 会绑到进程 cwd，宿主从别处启动就写错地方且静默失败
    */
   private resolveDbPath(): string {
     if (!this.dbPath) {
@@ -96,11 +114,11 @@ export class UserPromptStore {
     }
     this.initPromise = (async () => {
       const path = this.resolveDbPath();
-      // connect 不会自建父目录，目录缺失时曾静默丢写入
+      // connect 不会自建父目录，目录缺失会静默丢写入
       mkdirSync(dirname(path), { recursive: true });
       const db = await connect(path);
       await db.exec(SCHEMA);
-      // 启动时释放遗留 claim（崩溃恢复）
+      // 启动时释放遗留 claim，崩溃恢复
       await db.run("UPDATE user_prompts SET captured = 0 WHERE captured = 2");
       this.db = db;
     })();
@@ -119,7 +137,7 @@ export class UserPromptStore {
     return this.db;
   }
 
-  /** 幂等保存：同 session+message 只存一条 */
+  /** 幂等保存，同 session 与 message 只存一条 */
   async savePrompt(sessionId: string, messageId: string, projectPath: string, content: string): Promise<string> {
     const db = await this.ready();
     const id = newId();
@@ -187,13 +205,13 @@ export class UserPromptStore {
     await db.run("UPDATE user_prompts SET captured = 1 WHERE id = ?", [promptId]);
   }
 
-  /** 原子标记已捕获并关联记忆：两步分开写时进程中断会留下 claim 态，重启后被重置导致重复捕获 */
+  /** 原子标记已捕获并关联记忆。两步分开写时进程中断会留下 claim 态，重启后重置导致重复捕获 */
   async markCapturedWithMemory(promptId: string, memoryId: string): Promise<void> {
     const db = await this.ready();
     await db.run("UPDATE user_prompts SET captured = 1, linked_memory_id = ? WHERE id = ?", [memoryId, promptId]);
   }
 
-  /** 查已写记忆但状态未收敛的行（claim 中断残留） */
+  /** 查已写记忆但状态未收敛的行，claim 中断残留 */
   async listInconsistentCaptures(): Promise<UserPrompt[]> {
     const db = await this.ready();
     const rows = await db.all("SELECT * FROM user_prompts WHERE captured = 2");
@@ -244,5 +262,5 @@ function getDataPathSafe(): string {
   }
 }
 
-// 模块级单例：默认使用配置 dataPath
+// 模块级单例，默认使用配置 dataPath
 export const userPromptStore = new UserPromptStore();

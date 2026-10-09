@@ -1,6 +1,23 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 捕获防抖回归：密集对话不丢上下文 + 定时器触发后捕获真的落库
-// plugin 的 savePrompt 是浮动 promise（void），测试里必须先 await 幂等 savePrompt
-// 把落库变成确定前置，否则 SQLite 真实 I/O 与假定时器竞争会让捕获链随机空跑
+// savePrompt 是浮动 promise，测试须先 await 落库
+// 否则 SQLite 真实 I/O 与假定时器竞争会让捕获链随机空跑
 import { describe, expect, it, beforeEach, afterEach, beforeAll, afterAll, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -46,7 +63,7 @@ function makeCfg(dataPath: string): DshMemConfig {
   };
 }
 
-// vi.mock 工厂引用外部 testCfg 必须经变量中转（vitest 会提升 hoisting）
+// vi.mock 工厂引用外部变量须经 vi.hoisted 中转
 const { mockGetConfig, setTestCfg } = vi.hoisted(() => {
   const state = { cfg: null as DshMemConfig | null };
   return {
@@ -68,8 +85,7 @@ vi.mock("../src/config.js", () => ({
   CONFIG_PATH: "unused",
 }));
 
-// user-prompt-store 的 ready() 依赖 getConfig().dataPath——mock 后同一个 userPromptStore
-// 单例会读到当前用例的 dataPath；每用例 reset() 让它重连
+// userPromptStore 单例的 dbPath 来自 getConfig，每用例 reset 后重连
 import { apply, installPluginDeps } from "../src/plugin.js";
 
 function makeUserMessageEvent(messageId: string, text: string): SessionEvent {

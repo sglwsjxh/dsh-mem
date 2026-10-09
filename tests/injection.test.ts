@@ -1,6 +1,23 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 记忆注入回归测试：验证 systemPrompt.context 在默认配置下确实产出记忆内容
-// 背景：曾因 refreshMemoryContext 里 injectExcludeCurrentSession 分支直接 return，
-// 导致 cachedContext 永远为空、注入功能完全失效（README 宣称可用但实际不可用）。
+// 背景：曾因 injectExcludeCurrentSession 分支直接 return
+// 导致 cachedContext 永远为空，注入完全失效
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -10,7 +27,7 @@ import { apply, installPluginDeps } from "../src/plugin.js";
 import type { MemoryClientLike, TagsLike, UserProfileManagerLike } from "../src/services/contracts.js";
 import type { DshMemConfig, MemoryRecord } from "../src/types.js";
 
-// initConfig 只读 ~/.dsh 固定路径；测试用 vi.hoisted 状态注入内存配置单例
+// 配置只读固定路径，测试用 vi.hoisted 状态注入
 const { setTestCfg, mockGetConfig } = vi.hoisted(() => {
   const state: { cfg: DshMemConfig | null } = { cfg: null };
   return {
@@ -150,7 +167,7 @@ describe("记忆注入（systemPrompt.context）", () => {
 
   it("有记忆时，刷新后返回 <memory_context> 内容（回归：曾被 injectExcludeCurrentSession 提前 return 吞掉）", async () => {
     const captured = setup(async () => ({ success: true, memories: [makeMemory()] }));
-    // 首次调用触发异步刷新，返回旧缓存（空）
+    // 首次调用返回旧缓存并触发异步刷新
     expect(captured.text({})).toBe("");
     // 等异步刷新完成
     await new Promise((resolve) => setTimeout(resolve, 50));

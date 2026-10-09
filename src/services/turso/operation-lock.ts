@@ -1,3 +1,21 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 // 操作锁：迁移类操作互斥，写入前检查
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -28,12 +46,12 @@ function readLiveLock(path: string): LockState | null {
       return state;
     }
   } catch {
-    // 损坏的锁视为陈旧，走清理
+    // 锁损坏按陈旧处理
   }
   try {
     unlinkSync(path);
   } catch {
-    // 竞争或被占用，锁已无效，不阻塞写入
+    // 竞争失败不阻塞写入
   }
   return null;
 }

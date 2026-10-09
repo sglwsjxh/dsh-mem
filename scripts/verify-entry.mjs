@@ -1,6 +1,21 @@
+// dsh-mem
+// Copyright (C) 2026 dsh-mem contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 // 校验构建产物的 cordis 插件导出契约
-// 背景：cordis 加载器 unwrapExports 见到 default 导出会只取它，丢掉 inject/name
-// 该脚本在 CI 中拦截这类回归
+// 背景：加载器 unwrapExports 见到 default 会只取它，丢掉 inject/name
+// 该脚本在 CI 拦截这类回归
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -14,7 +29,7 @@ if (!existsSync(ENTRY)) {
 
 const mod = await import(pathToFileURL(ENTRY).href);
 
-// 复刻 cordis-plugin-loader 的 unwrapExports 语义
+// 复刻加载器的 unwrapExports 语义
 let resolved = mod;
 if (resolved && resolved.default != null) resolved = resolved.default;
 

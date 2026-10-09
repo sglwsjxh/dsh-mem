@@ -1,3 +1,20 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 导出导入单测：schema 校验、隐私脱敏、ID 冲突拒绝、dryRun
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -99,7 +116,7 @@ describe("importMemories", () => {
     const outputPath = join(base, "dry.json");
     await client.exportMemories({ currentDirectory: join(base, "proj"), outputPath });
 
-    // 换一个空项目做导入目标
+    // 换空项目做导入目标
     const targetInfo = getProjectTagInfo(join(base, "target"));
     const result = await client.importMemories({
       currentDirectory: join(base, "target"),

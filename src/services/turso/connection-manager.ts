@@ -1,4 +1,22 @@
-// 连接管理器：按路径复用 Turso 连接，路径限制在存储目录内
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 连接管理器：按路径复用连接，路径限制在存储目录内
 import { connect, type Database } from "@tursodatabase/database";
 import type { DatabaseOpts } from "@tursodatabase/database-common";
 import { existsSync, mkdirSync } from "node:fs";
@@ -9,12 +27,12 @@ import { TursoDb } from "./turso-db.js";
 
 export type ConnectFactory = (path: string, opts?: DatabaseOpts) => Promise<Database>;
 
-/** 多进程 WAL 仅 Unix 支持；Windows 单进程 */
+/** Windows 单进程，Unix 才支持多进程 WAL */
 export function supportsTursoMultiprocessWal(platform: NodeJS.Platform = process.platform): boolean {
   return platform !== "win32";
 }
 
-/** 每次 Turso open 必开的实验特性 */
+/** Turso open 必须开启的实验特性 */
 export function tursoExperimentalFeatures(
   platform: NodeJS.Platform = process.platform
 ): Array<"multiprocess_wal"> {

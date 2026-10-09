@@ -1,3 +1,20 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 远程嵌入服务测试：请求构造、dimensions 透传、错误处理、fail-fast
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { EmbeddingService } from "../src/services/embedding.js";
@@ -109,7 +126,7 @@ describe("EmbeddingService", () => {
     const svc = new EmbeddingService(BASE);
     await expect(svc.warmup()).rejects.toThrow(/500/);
     expect(svc.initError).not.toBeNull();
-    // 第二次 warmup 直接拒绝，不再发请求
+    // 第二次 warmup 直接拒绝不再发请求
     const calls = (fetch as ReturnType<typeof vi.fn>).mock.calls.length;
     await expect(svc.warmup()).rejects.toThrow(/500/);
     expect((fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(calls);

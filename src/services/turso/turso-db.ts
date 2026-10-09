@@ -1,4 +1,22 @@
-// @tursodatabase/database 连接包装：统一结果集与事务句柄
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// Turso 连接包装：统一结果集与事务句柄
 import type { Database } from "@tursodatabase/database";
 
 export type SqlValue = null | string | number | bigint | boolean | Uint8Array | ArrayBuffer;
@@ -56,7 +74,7 @@ function statementToResultSet(
   };
 }
 
-/** 事务句柄：向量插入与导入路径使用 */
+/** 事务句柄，向量插入与导入用 */
 export interface TursoTx {
   execute(statement: { sql: string; args?: SqlArgs } | string, args?: SqlArgs): Promise<ResultSet>;
   run(sql: string, args?: SqlArgs): Promise<number>;

@@ -1,3 +1,21 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 // 分片管理：注册表、分片轮换、写锁与向量计数
 import { join, basename, resolve, relative } from "node:path";
 import { existsSync, unlinkSync } from "node:fs";
@@ -30,7 +48,7 @@ export class TursoShardManager {
     this.writeLocks.clear();
   }
 
-  /** 同一 scope 的写入串行化，避免分片轮换竞争 */
+  /** 同 scope 写入串行化，避免分片轮换竞争 */
   async withScopeWriteLock<T>(scope: "user" | "project", scopeHash: string, fn: () => Promise<T>): Promise<T> {
     const key = `${scope}:${scopeHash}`;
     const previous = this.writeLocks.get(key) ?? Promise.resolve();
@@ -132,7 +150,7 @@ export class TursoShardManager {
     const storedPath = join(`${scope}s`, basename(fullPath)).replace(/\\/g, "/");
     const now = Date.now();
 
-    // 先建分片文件再写注册行：初始化失败不留下指向空文件的孤儿行
+    // 先建文件再写注册行，避免孤儿行指向空文件
     const shardDb = await tursoConnectionManager.getConnection(fullPath);
     await this.initShardDb(shardDb);
 
@@ -205,7 +223,7 @@ export class TursoShardManager {
     return this.rowToShardInfo(row);
   }
 
-  /** dimensions 可选（自动探测模式），分片初始化必须有确定值 */
+  /** dimensions 可空，自动探测模式；初始化必须确定值 */
   private resolveDimensions(explicit?: number): number {
     const dims = explicit ?? getConfig().embedding.dimensions;
     if (dims === undefined) {
@@ -227,14 +245,14 @@ export class TursoShardManager {
         args: [String(dims)],
       },
       {
-        // key 名保留 embedding_type 避免 schema 迁移，值存模型标识字符串
+        // key 名沿用 embedding_type，避免 schema 迁移
         sql: `INSERT OR REPLACE INTO shard_metadata (key, value) VALUES ('embedding_type', ?)`,
         args: [getConfig().embedding.model],
       },
     ]);
   }
 
-  /** 应用分片模式迁移，不重写 shard_metadata */
+  /** 应用分片迁移，不重写 shard_metadata */
   async ensureShardSchema(db: TursoDb, dimensions?: number): Promise<void> {
     const dims = this.resolveDimensions(dimensions);
     await applySchemaMigrations(db, memoryShardMigrations(dims), { label: "memory-shard" });
@@ -365,8 +383,8 @@ export class TursoShardManager {
   }
 
   /**
-   * 分片改挂到新 scope hash 与新文件名。
-   * 调用方必须先关连接、改好文件名。
+   * 分片改挂到新 scope hash 与文件名
+   * 调用方必须先关连接并改好文件名
    */
   async reassignShardScope(
     shardId: number,

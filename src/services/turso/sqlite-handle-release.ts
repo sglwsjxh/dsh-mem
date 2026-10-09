@@ -1,4 +1,22 @@
-// SQLite 文件副作用处理：WAL/SHM 同步搬运与 Windows 句柄重试
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// SQLite 文件副作用：WAL/SHM 搬运与 Windows 句柄重试
 import { copyFileSync, existsSync, renameSync, unlinkSync } from "node:fs";
 
 type RuntimeWithGarbageCollector = typeof globalThis & { gc?: () => void };
@@ -9,7 +27,7 @@ export const RETRYABLE_FILE_LOCK_CODES = new Set(["EBUSY", "EPERM", "EACCES"]);
 
 const SQLITE_SIDE_SUFFIXES = ["-wal", "-shm", "-tshm"] as const;
 
-/** 重命名数据库文件并同步搬运 WAL/SHM 副本，避免丢提交 */
+/** 重命名并搬运 WAL/SHM 副本，避免丢提交 */
 export function renameSqliteDatabase(fromPath: string, toPath: string): void {
   renameSync(fromPath, toPath);
   for (const suffix of SQLITE_SIDE_SUFFIXES) {
@@ -20,7 +38,7 @@ export function renameSqliteDatabase(fromPath: string, toPath: string): void {
   }
 }
 
-/** 复制数据库文件并同步复制 WAL/SHM 副本 */
+/** 同步复制 WAL/SHM 副本 */
 export function copySqliteDatabase(fromPath: string, toPath: string): void {
   copyFileSync(fromPath, toPath);
   for (const suffix of SQLITE_SIDE_SUFFIXES) {
@@ -31,7 +49,7 @@ export function copySqliteDatabase(fromPath: string, toPath: string): void {
   }
 }
 
-/** 删除数据库文件及全部副作用文件 */
+/** 删除数据库及 WAL/SHM 副作用文件 */
 export function removeSqliteDatabase(dbPath: string): void {
   for (const path of [dbPath, `${dbPath}-wal`, `${dbPath}-shm`, `${dbPath}-tshm`]) {
     if (existsSync(path)) unlinkSync(path);
@@ -42,7 +60,7 @@ function delay(ms: number): Promise<void> {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-/** Windows 上句柄延迟释放，交换文件前强制回收 */
+/** Windows 句柄延迟释放，交换文件前强制回收 */
 export async function collectReleasedSqliteHandles(): Promise<void> {
   if (process.platform !== "win32") return;
   const globalGc = (globalThis as RuntimeWithGarbageCollector).gc;
@@ -53,7 +71,7 @@ export async function collectReleasedSqliteHandles(): Promise<void> {
   }
 }
 
-/** Windows 文件操作重试，句柄未释放时按退避表等待 */
+/** Windows 句柄未释放时按退避表重试 */
 export async function withSqliteFileLockRetry<T>(
   operation: () => T | Promise<T>,
   maxRetries: number = FILE_LOCK_RETRY_DELAYS_MS.length

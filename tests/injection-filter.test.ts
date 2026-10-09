@@ -1,6 +1,23 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 注入过滤回归测试：混合块（用户文本 + system-reminder）必须保留用户文本
-// 背景：旧实现按"包含 marker"整块丢弃，dsh 把 AGENTS.md 指引以 <system-reminder>
-// 拼进用户消息 → 真实用户输入被误杀 → 自动捕获对真实会话永不生效。
+// 背景：旧实现按包含 marker 整块丢弃，dsh 把指引拼进用户消息
+// 导致真实输入被误杀，自动捕获对真实会话永不生效
 import { describe, expect, it } from "vitest";
 import {
   filterInjectedBlocks,

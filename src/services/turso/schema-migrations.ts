@@ -1,4 +1,22 @@
-// 分片模式迁移：基于 PRAGMA user_version 的增量建表
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 分片模式迁移：按 PRAGMA user_version 增量建表
 import type { TursoDb } from "./turso-db.js";
 
 export type SchemaMigration = {
@@ -130,7 +148,7 @@ export const METADATA_DB_MIGRATIONS: SchemaMigration[] = [
   },
 ];
 
-/** 用户 prompt 记录表（宿主集成写，此处集中定义） */
+/** 用户 prompt 记录表，宿主集成写入 */
 export const USER_PROMPTS_MIGRATIONS: SchemaMigration[] = [
   {
     version: 1,
@@ -159,7 +177,7 @@ export const USER_PROMPTS_MIGRATIONS: SchemaMigration[] = [
   },
 ];
 
-/** 用户画像表（宿主集成写，此处集中定义） */
+/** 用户画像表，宿主集成写入 */
 export const USER_PROFILES_MIGRATIONS: SchemaMigration[] = [
   {
     version: 1,

@@ -1,3 +1,20 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 项目身份标签单测：标记文件优先、容器标签格式、目录名
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -19,12 +36,12 @@ let plainDir: string;
 
 beforeAll(() => {
   base = mkdtempSync(join(tmpdir(), "dsh-mem-tags-"));
-  // 标记目录：marker 根 + 嵌套子目录
+  // 标记目录含嵌套子目录
   markerDir = join(base, "marker-root");
   nestedDir = join(markerDir, "nested", "deep");
   mkdirSync(nestedDir, { recursive: true });
   writeFileSync(join(markerDir, ".dsh-mem-project"), "");
-  // 普通目录：无标记无 git
+  // 普通目录无标记无 git
   plainDir = join(base, "plain");
   mkdirSync(plainDir, { recursive: true });
 });

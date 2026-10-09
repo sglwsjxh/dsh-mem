@@ -1,5 +1,23 @@
-// dsh-mem 入口：cordis 函数插件（name / inject / apply 命名导出）
-// 注意：不能有 default 导出——cordis 加载器见到 default 会只取它，丢掉 inject/name
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// dsh-mem 入口：cordis 函数插件
+// 坑：不能有 default 导出。cordis 加载器见到 default 只取它，丢掉 inject 与 name
 export { apply, name, inject, installPluginDeps, getUserProfileManager, createLocalMemoryClient, createMemoryTool } from "./plugin-entry.js";
 export type { PluginDeps, DshMemPluginOptions } from "./plugin.js";
 export { SessionTurnCollector, extractAuthoredUserText } from "./plugin.js";

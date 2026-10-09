@@ -1,7 +1,23 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 捕获状态收敛回归测试
-// 背景：linkMemoryToPrompt + markAsCaptured 两步非原子，进程在中间中断会留下 captured=2；
-// 重启时被重置为 0 → 重新捕获 → 写出重复记忆。
-// 另：addMemory 成功后若状态更新抛错，绝不能进重试分支（会重复写记忆）。
+// 背景：两步写状态非原子，中断留下 captured=2，重启重捕获会写重复记忆
+// 记忆已落库后状态更新抛错，不得进重试分支
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -9,7 +25,7 @@ import { tmpdir } from "node:os";
 import type { DshMemConfig } from "../src/types.js";
 import { UserPromptStore } from "../src/services/user-prompt-store.js";
 
-// initConfig 不再接受参数且只读 ~/.dsh 固定路径；测试用 vi.hoisted 状态 + vi.mock 注入配置单例
+// 配置只读固定路径，测试用 vi.hoisted 状态注入
 const { mockGetConfig, setTestCfg } = vi.hoisted(() => {
   const state = { cfg: null as DshMemConfig | null };
   return {
@@ -83,7 +99,7 @@ describe("捕获状态收敛", () => {
   it("残留 captured=2 可被 listInconsistentCaptures 查出（中断现场）", async () => {
     const id = await store.savePrompt("s2", "m1", dir, "内容");
     await store.claimPrompt(id);
-    // 模拟：claim 后进程中断，link/mark 都没执行
+    // 模拟 claim 后进程中断
     const stale = await store.listInconsistentCaptures();
     expect(stale).toHaveLength(1);
     expect(stale[0]!.id).toBe(id);
@@ -94,7 +110,7 @@ describe("捕获状态收敛", () => {
     const id = await store.savePrompt("s3", "m1", dir, "内容");
     await store.claimPrompt(id);
     await store.close();
-    // 重开同一库，模拟进程重启
+    // 重开同一库模拟重启
     const reopened = new UserPromptStore();
     const pending = await reopened.getUncapturedPromptsForSession("s3");
     expect(pending).toHaveLength(1);

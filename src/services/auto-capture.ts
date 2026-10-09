@@ -1,5 +1,22 @@
-// 自动捕获：session 空闲后取未捕获 prompt，LLM 总结入记忆库
-// 改写自 opencode-mem auto-capture：去掉 opencode provider 分支，统一走 LlmClient
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 自动捕获：会话空闲后取未捕获 prompt，LLM 总结入库
 import { randomUUID } from "node:crypto";
 import { getConfig } from "../config.js";
 import type { CaptureSummary, LlmClient, MemorySearchResult } from "../types.js";
@@ -17,7 +34,7 @@ const SUMMARY_ANALYSIS_SUFFIX =
   "Analyze this conversation. If it contains technical work (code, bugs, features, decisions), " +
   'create a concise summary and relevant tags. If it\'s non-technical (greetings, casual chat, incomplete requests), return type="skip" with empty summary.';
 
-// 会话间串行化：一个会话空闲触发捕获时排队，不互相丢任务
+// 会话间串行化，避免并发捕获互相丢任务
 let captureChain: Promise<void> = Promise.resolve();
 
 export interface AutoCaptureDeps {
@@ -28,18 +45,16 @@ export interface AutoCaptureDeps {
 
 export interface PerformAutoCaptureOptions {
   signal?: AbortSignal;
-  /** 本轮会话新增的助手响应内容（由宿主回调采集） */
+  /** 本轮新增的助手响应，宿主回调采集 */
   sessionContext: SessionContext;
 }
 
-/** 一次会话的对话上下文（用户 prompt + 助手响应 + 工具调用摘要） */
+/** 一次会话的对话上下文 */
 export interface SessionContext {
   sessionId: string;
-  /** 用户输入文本（已过滤注入内容） */
+  /** 用户输入，已过滤注入内容 */
   userPrompts: string[];
-  /** 助手响应文本 */
   assistantResponses: string[];
-  /** 工具调用摘要 name(input) */
   toolCalls: { name: string; input: string }[];
 }
 
@@ -53,7 +68,7 @@ export async function performAutoCapture(deps: AutoCaptureDeps, options: Perform
   return next;
 }
 
-/** 插件 dispose 前等待在途捕获结束 */
+/** dispose 前等待在途捕获结束 */
 export function awaitCaptureDrain(): Promise<void> {
   return captureChain;
 }
@@ -126,7 +141,7 @@ async function capturePrompt(
 
         if (result.success) {
           claimed = false;
-          // 记忆已落库：状态更新失败绝不能进重试分支，否则 addMemory 再跑一次会写出重复记忆
+          // 记忆已落库，状态更新失败不能进重试分支，否则重复写记忆
           try {
             await userPromptStore.markCapturedWithMemory(prompt.id, String(result.id));
             log("auto-capture memory persisted", { promptId: prompt.id, memoryId: String(result.id) });
@@ -214,7 +229,7 @@ export function getAutoCaptureMarkdownBudget(totalRequestBytes: number = DEFAULT
   return Math.max(4096, totalRequestBytes - requestReserve);
 }
 
-/** 组装自动捕获 markdown 上下文，体积受 autoCaptureMaxContext 约束 */
+/** 组装捕获上下文，体积受 autoCaptureMaxContext 约束 */
 export function buildMarkdownContext(
   userPrompt: string,
   textResponses: string[],
@@ -268,7 +283,7 @@ export function buildMarkdownContext(
   return truncateToMaxBytes(result, maxContextBytes, CONTEXT_TRUNCATION_MARKER);
 }
 
-/** LLM 结构化总结 prompt 体积约束 */
+/** 总结 prompt 体积约束 */
 export function buildBoundedSummaryPrompt(
   context: string,
   systemPrompt: string,
@@ -310,7 +325,7 @@ const SUMMARY_JSON_PREFIX = /```json\s*/;
 const SUMMARY_JSON_SUFFIX = /```\s*$/;
 
 function parseSummaryJson(text: unknown): CaptureSummary | null {
-  // LLM 客户端可能返回非字符串（数组/对象/空），统一兜底避免运行时崩溃
+  // LLM 可能返回非字符串，统一兜底避免崩溃
   if (typeof text !== "string") {
     if (Array.isArray(text)) text = text.filter((t) => typeof t === "string").join("\n");
     else if (text && typeof text === "object") text = JSON.stringify(text);
@@ -336,7 +351,8 @@ function parseSummaryJson(text: unknown): CaptureSummary | null {
 }
 
 async function generateSummary(deps: AutoCaptureDeps, context: string, userPrompt: string): Promise<CaptureSummary | null> {
-  void userPrompt; // 语言由 LLM 依据用户输入自行跟随，不做本地语言检测
+  // 语言由 LLM 跟随用户输入，不做本地检测
+  void userPrompt;
   const systemPrompt = buildCaptureSystemPrompt();
   const aiPrompt = buildBoundedSummaryPrompt(context, systemPrompt, '{"summary":"...","type":"...","tags":["..."]}');
 
@@ -347,7 +363,7 @@ async function generateSummary(deps: AutoCaptureDeps, context: string, userPromp
   return parsed;
 }
 
-/** 生成会话上下文摘要条目：工具调用入参截断 */
+/** 生成工具调用摘要，入参截断 */
 export function summarizeToolCall(name: string, input: unknown, maxLength = 100): { name: string; input: string } {
   let inputText = "";
   if (typeof input === "string") {
@@ -363,7 +379,7 @@ export function summarizeToolCall(name: string, input: unknown, maxLength = 100)
   return { name, input: inputText };
 }
 
-/** 仅供内部测试：捕获会话 id 标识 */
+/** 内部测试用：捕获会话 id */
 export function newCaptureSessionId(promptId: string): string {
   return `auto-capture-${promptId}-${randomUUID()}`;
 }

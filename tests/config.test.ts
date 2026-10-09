@@ -1,6 +1,22 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 配置加载测试：单路径 ~/.dsh/dsh-mem.jsonc、归一化、fail-fast
-// initConfig 只读固定路径；测试用 vi.mock 拦截 existsSync/readFileSync，
-// 把 CONFIG_PATH 的读重定向到真实临时文件，不污染真实 ~/.dsh
+// 用 vi.mock 拦截 fs，把固定配置路径重定向到临时文件
 import { describe, expect, it, beforeEach, afterAll, vi } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync, existsSync as realExists, readFileSync as realRead } from "node:fs";
 import { join } from "node:path";

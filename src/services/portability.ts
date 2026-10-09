@@ -1,4 +1,22 @@
-// 记忆导出导入：JSON 文档 + zod 校验，带隐私脱敏
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 记忆导出导入：JSON 文档加 zod 校验，带隐私脱敏
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -108,7 +126,7 @@ function describeEmbeddingModel(): string {
   return cfg.model || "unconfigured";
 }
 
-/** dimensions 未配置时回退 meta.json 的自动探测值 */
+/** dimensions 未配置时回退 meta.json 的探测值 */
 function resolveExportDimensions(): number {
   const cfg = getConfig().embedding;
   if (cfg.dimensions !== undefined) return cfg.dimensions;
@@ -210,7 +228,7 @@ export async function exportMemories(
       memories,
     };
 
-    // 写盘前先校验，保证不产出非法文档
+    // 写盘前先校验，不产出非法文档
     MemoryExportDocumentSchema.parse(document);
 
     mkdirSync(dirname(outputPath), { recursive: true });

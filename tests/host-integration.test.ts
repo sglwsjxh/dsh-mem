@@ -1,3 +1,20 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // host 集成层单测：注入过滤 / 上下文格式 / 捕获上下文组装 / prompt store / memory 工具
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -5,7 +22,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DshMemConfig } from "../src/types.js";
 
-// initConfig 不再接受参数且只读 ~/.dsh 固定路径；测试用 vi.hoisted 状态 + vi.mock 注入配置单例
+// 配置只读固定路径，测试用 vi.hoisted 状态注入
 const { mockGetConfig, setTestCfg } = vi.hoisted(() => {
   const state = { cfg: null as DshMemConfig | null };
   return {
@@ -374,7 +391,7 @@ describe("memory tool", () => {
     expect(missing.success).toBe(false);
     expect(missing.error).toBe("Memory not found");
 
-    // profile 写入 + 读取
+    // profile 写入读取
     const wrote = await tool.execute({ mode: "profile", content: "likes concise answers" }, makeExec());
     expect(wrote.success).toBe(true);
     const read = await tool.execute({ mode: "profile" }, makeExec());

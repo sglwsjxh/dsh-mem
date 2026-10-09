@@ -1,11 +1,29 @@
-// 嵌入服务：只走 OpenAI 兼容 /embeddings API，无本地推理、无模型下载、无缓存探测
-// 本地模型（GGUF/llama.cpp server、ONNX）请自行起 OpenAI 兼容服务并填 baseurl
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 嵌入服务：只走 OpenAI 兼容 embeddings API
+// 本地模型请自起 OpenAI 兼容服务并填 baseurl
 import type { EmbeddingConfig, Embedder } from "../types.js";
 import { resolveSecretValue } from "./secret-resolver.js";
 
 const EMBED_TIMEOUT_MS = 30000;
 
-/** 单例：按 model 字符串重建；config 由调用方（plugin-entry）在 initConfig 成功后传入 */
+/** 单例按 model 重建，config 由调用方在 initConfig 后传入 */
 let service: EmbeddingService | null = null;
 let serviceKey = "";
 
@@ -44,7 +62,7 @@ export class EmbeddingService implements Embedder {
     return this.initError;
   }
 
-  /** 无本地加载，warmup 只做一次真实 API 探测：失败即报错，不重试不回退 */
+  /** warmup 只做一次真实 API 探测，失败即报错不重试 */
   async warmup(): Promise<void> {
     if (this._isReady) return;
     if (this.initError) throw new Error(this.initError);
@@ -52,7 +70,7 @@ export class EmbeddingService implements Embedder {
       await this.embedText("warmup", undefined);
       this._isReady = true;
     } catch (error) {
-      // fail-fast：报错后拒绝重试，避免"永远在初始化"
+      // 报错后拒绝重试，避免永远停在初始化
       this.initError = error instanceof Error ? error.message : String(error);
       throw error;
     }

@@ -1,3 +1,21 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 // 向量检索：精确余弦扫描 + 内容/标签/关键词混合重排
 import type { MemorySearchResult } from "../../types.js";
 import type { StoredMemory, ShardInfo } from "./types.js";
@@ -90,7 +108,7 @@ export class TursoVectorSearch {
     const db = await tursoConnectionManager.getConnection(shard.dbPath);
     await this.ensureShardSchema(db);
     const queryJson = vectorToJson(queryVector);
-    // 精确余弦已返回最优行，超采样一点让三类候选合并后再重排
+    // 超采样，三类候选合并后再重排
     const k = Math.max(limit * 2, 32);
 
     const contentResults = await this.exactScanKind(db, queryJson, k, containerTag, "vector");
@@ -141,7 +159,7 @@ export class TursoVectorSearch {
       const tagsSim =
         row.tags_dist == null || row.tags_dist === undefined ? 0 : distanceToSimilarity(Number(row.tags_dist));
       const memoryTagsStr = String(row.tags || "");
-      // filter(Boolean)："".split(",") 会得到 [""]，"".includes("") 恒真
+      // filter(Boolean)：空串 split 得 [""]，includes 恒真
       const memoryTags = memoryTagsStr
         .split(",")
         .map((tag) => tag.trim().toLowerCase())
@@ -157,7 +175,7 @@ export class TursoVectorSearch {
 
       const keywordSim = keywordScores.get(String(row.id)) ?? 0;
       const finalTagsSim = Math.max(tagsSim, exactMatchBoost);
-      // 有关键词时三通道混合；无关键词时退回经典 0.6/0.4
+      // 有关键词走三通道，无关键词退回 0.6/0.4
       const similarity = hasKeyword
         ? contentSim * 0.5 + finalTagsSim * 0.3 + keywordSim * 0.2
         : contentSim * 0.6 + finalTagsSim * 0.4;
@@ -178,14 +196,14 @@ export class TursoVectorSearch {
   }
 
   private async ensureShardSchema(db: TursoDb): Promise<void> {
-    // 惰性导入避免与 shard-manager 循环依赖
+    // 惰性导入避免循环依赖
     const { tursoShardManager } = await import("./shard-manager.js");
     await tursoShardManager.ensureShardSchema(db);
   }
 
   /**
-   * 关键词召回。@tursodatabase/database 不带 FTS5，
-   * 用分词后的 LIKE 扫 content/tags，token 数有界且 ESCAPE 安全
+   * 关键词召回。驱动无 FTS5
+   * 用分词 LIKE 扫 content/tags，token 有界且 ESCAPE 安全
    */
   private async keywordScores(
     db: TursoDb,

@@ -1,3 +1,21 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 // jsonc 解析：剥离注释与尾逗号
 export function stripJsoncComments(content: string): string {
   let result = "";
@@ -59,7 +77,6 @@ export function stripJsoncComments(content: string): string {
     result += ch;
   }
 
-  // 尾逗号
   return result.replace(/,\s*([}\]])/g, "$1");
 }
 

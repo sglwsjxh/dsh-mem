@@ -1,5 +1,23 @@
-// 隐私过滤：<private>…</private> 区域替换为 [REDACTED]
-// 逻辑与 opencode-mem privacy.ts 对齐：未闭合闭合到末尾，嵌套闭合到外层
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 隐私过滤：private 区域替换为 REDACTED
+// 未闭合的闭合到末尾，嵌套的闭合到外层
 const REDACTED = "[REDACTED]";
 const PRIVATE_TAG = /<(\/?)private\s*>/gi;
 

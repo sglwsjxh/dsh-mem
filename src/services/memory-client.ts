@@ -1,5 +1,22 @@
-// LocalMemoryClient：存储层门面，对齐 contracts.ts 的 MemoryClientLike
-// 嵌入依赖构造注入，避免与 engine 的 embedding.ts 耦合
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 存储层门面，嵌入依赖构造注入
 import { getConfig } from "../config.js";
 import type { Embedder, MemoryRecord, MemorySearchResult } from "../types.js";
 import { log } from "./logger.js";
@@ -234,7 +251,7 @@ export class LocalMemoryClient {
           ...dynamicMetadata
         } = metadata ?? {};
 
-        // sessionId 同时落到独立列与 metadata.sessionID，兼容两条检索路径
+        // sessionId 同时落独立列与 metadata，兼容两条检索路径
         const metadataJson: Record<string, unknown> = { ...dynamicMetadata };
         if (sessionId) metadataJson.sessionID = sessionId;
         if (source) metadataJson.source = source;
@@ -424,10 +441,7 @@ export class LocalMemoryClient {
     }
   }
 
-  /**
-   * 项目路径迁移：行级搬移（读源分片向量 → 重打标签写入目标分片 → 删源行）。
-   * 0.1.0 简化实现，不做文件级 rename
-   */
+  /** 项目路径迁移：行级搬移，读源向量重打标签写目标分片再删源行，不做文件级 rename */
   async migrateProjectPath(options: MigrateProjectPathOptions): Promise<MigrateProjectPathResult> {
     try {
       await this.initialize();
@@ -435,7 +449,7 @@ export class LocalMemoryClient {
       const target = getProjectTagInfo(options.currentDirectory);
       const newHash = extractScopeFromContainerTag(target.tag).hash;
 
-      // 解析源 hash：显式 fromHash 优先，否则按存储的 project_path 匹配
+      // 源 hash：显式 fromHash 优先，否则按存储的 project_path 匹配
       let oldHash = options.fromHash ?? null;
       if (!oldHash) {
         if (!options.fromPath) {
@@ -556,7 +570,7 @@ export class LocalMemoryClient {
   }
 }
 
-/** 装配入口：宿主以 embedding 服务实例化后注入 installPluginDeps */
+/** 装配入口：宿主注入 embedding 服务实例 */
 export function createLocalMemoryClient(embedder: Embedder): LocalMemoryClient {
   return new LocalMemoryClient(embedder);
 }

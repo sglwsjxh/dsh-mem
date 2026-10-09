@@ -1,5 +1,22 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 会话工作区回归测试：项目身份必须跟随 session.header.cwd，而非进程 cwd
-// 背景：dsh web 从 ~ 启动时 process.cwd() 是 home，导致记忆分片按 home 建、与项目目录割裂
+// 背景：dsh web 从 home 启动时进程 cwd 是 home，记忆分片会与项目目录割裂
 import { describe, expect, it, beforeEach, afterAll, vi } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -11,7 +28,7 @@ import { userPromptStore } from "../src/services/user-prompt-store.js";
 import type { MemoryClientLike, TagsLike, UserProfileManagerLike } from "../src/services/contracts.js";
 import type { DshMemConfig } from "../src/types.js";
 
-// initConfig 只读 ~/.dsh 固定路径；测试用 vi.hoisted 状态注入内存配置单例
+// 配置只读固定路径，测试用 vi.hoisted 状态注入
 const { setTestCfg, mockGetConfig } = vi.hoisted(() => {
   const state: { cfg: DshMemConfig | null } = { cfg: null };
   return {
@@ -94,7 +111,7 @@ describe("项目身份跟随会话工作区", () => {
     dir = mkdtempSync(join(tmpdir(), "dsh-mem-ws-"));
     wsA = mkdtempSync(join(tmpdir(), "dsh-mem-wsA-"));
     wsB = mkdtempSync(join(tmpdir(), "dsh-mem-wsB-"));
-    // 保证两个工作区目录可被 git 探测（tag 身份依据）
+    // 保证工作区可被 git 探测，tag 身份依据
     mkdirSync(join(wsA, ".git"), { recursive: true });
     mkdirSync(join(wsB, ".git"), { recursive: true });
     mkdirSync(join(dir, ".git"), { recursive: true });
@@ -123,7 +140,7 @@ describe("项目身份跟随会话工作区", () => {
       listMemories: async () => ({ success: true, memories: [] }),
       deleteMemory: async () => ({ success: true }),
       searchMemoriesBySessionID: async () => ({ success: true, results: [] }),
-      // 可携性：记录收到的目录，供断言
+      // 记录收到的目录供断言
       listShards: async (currentDirectory: string) => {
         shardCalls.push(currentDirectory);
         return { success: true, storagePath: "/x", shards: [] };
@@ -172,7 +189,7 @@ describe("项目身份跟随会话工作区", () => {
   }
 
   it("session.header.cwd 与装配目录不同时，savePrompt 用会话工作区", async () => {
-    // 直接调用 getTags 的行为验证：两个工作区产生不同 tag
+    // 直接调 getTags 验证两个工作区产生不同 tag
     const { getProjectTagInfo } = await import("../src/services/tags.js");
     const tagA = getProjectTagInfo(wsA).tag;
     const tagB = getProjectTagInfo(wsB).tag;
@@ -189,12 +206,12 @@ describe("项目身份跟随会话工作区", () => {
   });
 
   it("getActiveTags 兜底顺序：装配目录在 currentWorkspace 未设置时生效", async () => {
-    // 装配（此时无任何 session 事件，currentWorkspace 未定义）
+    // 装配时无 session 事件，currentWorkspace 未定义
     const { handler } = setup();
-    // 触发一个 user/message（fake session 不带 header.cwd，应兜底到装配目录）
+    // 触发 user/message，fake session 无 cwd 应兜底到装配目录
     const session = makeFakeSession("sess-1", undefined);
     handler(session, makeUserMessageEvent("m1", "测试兜底"));
-    // 不抛异常即视为兜底路径正常
+    // 不抛异常即兜底正常
     expect(handler).toBeDefined();
   });
 
@@ -202,7 +219,7 @@ describe("项目身份跟随会话工作区", () => {
     const { handler } = setup();
     const session = makeFakeSession("sess-2", wsA);
     handler(session, makeUserMessageEvent("m2", "测试会话工作区捕获"));
-    // 再次触发同会话事件，缓存路径不重复报错
+    // 再次触发同会话事件，缓存路径不报错
     handler(session, makeUserMessageEvent("m3", "再次触发"));
     expect(handler).toBeDefined();
   });
@@ -211,7 +228,7 @@ describe("项目身份跟随会话工作区", () => {
     const { handler, tool, shardCalls } = setup();
     // 会话工作区是 wsA，装配目录是 dir
     handler(makeFakeSession("sess-3", wsA), makeUserMessageEvent("m4", "触发会话工作区"));
-    // 工具 exec 也带会话 cwd（模拟宿主调用）
+    // 工具 exec 也带会话 cwd
     const exec = { signal: new AbortController().signal, agent: { session: { header: { cwd: wsA } } } };
     await tool.execute({ mode: "list-shards" }, exec);
     expect(shardCalls).toHaveLength(1);

@@ -1,8 +1,25 @@
-// 记忆注入格式：组装 <memory_context> 块，格式与 opencode-mem context.ts 对齐
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 记忆注入格式：组装 memory_context 块
 import { getConfig } from "../config.js";
 import type { UserProfileData } from "../types.js";
 
-/** 画像注入文本：从画像数据组装用户偏好摘要 */
 export function formatProfileForContext(profile: UserProfileData | null): string | null {
   if (!profile) return null;
   const parts: string[] = [];
@@ -47,10 +64,7 @@ export interface ProfileLookup {
   (userId: string | null): Promise<UserProfileData | null>;
 }
 
-/**
- * 组装注入上下文。injectProfile=true 且 userId 非空时带 <user_profile>，
- * 记忆条目逐条 <memory relevance="N%">。
- */
+/** 组装注入上下文。injectProfile 开启且 userId 非空时带画像块，记忆条目逐条带相关度 */
 export async function formatContextForPrompt(
   userId: string | null,
   projectMemories: { results: MemoryContextInput[] },

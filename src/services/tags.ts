@@ -1,4 +1,22 @@
-// 项目身份标签：git root / .dsh-mem-project 标记识别 + sha256 前 16 位
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 项目身份标签：git root 与标记文件识别，sha256 前 16 位
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { normalize, resolve, isAbsolute, basename, dirname, join, delimiter, relative } from "node:path";
@@ -8,13 +26,9 @@ function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex").slice(0, 16);
 }
 
-/**
- * 标记文件：存在时把该目录钉为 dsh-mem 项目根。
- * monorepo 或多仓库工作区在根上放此文件，下面所有会话共用一个记忆库
- */
+/** 标记文件存在时把该目录钉为项目根。monorepo 或多仓库工作区在根上放此文件，下面所有会话共用一个记忆库 */
 const PROJECT_MARKER = ".dsh-mem-project";
 
-/** 容器标签前缀 */
 export const CONTAINER_TAG_PREFIX = "dsh";
 
 function canonicalPath(path: string): string {
@@ -69,10 +83,7 @@ function resolveTrustedWindowsShell(untrustedRoot: string): string | null {
   return null;
 }
 
-/**
- * 从 PATH 解析 git 可执行文件，拒绝位于项目目录内的副本。
- * 防止项目内投放的恶意 git.exe 被执行
- */
+/** 从 PATH 解析 git，拒绝项目目录内的副本，防止执行项目内投放的恶意 git */
 function resolveTrustedGitCommand(directory: string): GitCommand | null {
   const untrustedRoot = findUntrustedProjectRoot(directory);
   const executableNames = process.platform === "win32" ? ["git.exe", "git.cmd", "git.bat"] : ["git"];
@@ -121,7 +132,7 @@ function runGit(args: string[], directory: string = process.cwd()): string | nul
   }
 }
 
-/** 从 directory 向上找 PROJECT_MARKER，找不到返回 null */
+/** 从 directory 向上找标记文件，找不到返回 null */
 export function findMarkerProjectRoot(directory: string): string | null {
   let dir = resolve(directory);
   while (true) {
@@ -143,7 +154,7 @@ export interface TagInfo {
   gitRepoUrl?: string;
 }
 
-/** 项目侧标签：root 恒存在，字段必填，对齐 contracts.ts 的 TagsLike */
+/** 项目侧标签，root 恒存在，字段必填 */
 export interface ProjectTagInfo {
   tag: string;
   displayName: string;
@@ -221,7 +232,7 @@ export function getProjectName(directory: string): string {
   return parts[parts.length - 1] || directory;
 }
 
-/** 用户身份：git 邮箱优先，回退用户名/环境变量 */
+/** 用户身份：git 邮箱优先，回退用户名与环境变量 */
 export function getUserTagInfo(directory: string = process.cwd()): TagInfo {
   const email = getGitEmail(directory);
   const name = getGitName(directory);
@@ -244,7 +255,7 @@ export function getUserTagInfo(directory: string = process.cwd()): TagInfo {
   };
 }
 
-/** 项目身份：标记优先，回退 git common dir / remote / 路径 */
+/** 项目身份：标记优先，回退 git common dir 与 remote 与路径 */
 export function getProjectTagInfo(directory: string): TagInfo {
   // 标记只解析一次，root 与 identity 都从它推导
   const markerRoot = findMarkerProjectRoot(directory);
@@ -263,7 +274,6 @@ export function getProjectTagInfo(directory: string): TagInfo {
   };
 }
 
-/** 组合用户与项目标签，形状对齐 ProjectTags 与 contracts.ts TagsLike */
 export function getTags(directory: string): {
   user: TagInfo;
   project: ProjectTagInfo;

@@ -1,4 +1,22 @@
-// 容器标签与 scope 解析：{prefix}_{user|project}_{16hex}
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 容器标签与 scope 解析：prefix_scope_16hex
 export const SCOPE_HASH_PATTERN = /^[a-f0-9]{16}$/;
 
 export function isValidScopeHash(hash: string): boolean {
@@ -51,7 +69,7 @@ export interface MemoryScopeRef {
   hash: string;
 }
 
-/** all 跨 user + project 两个 scope 检索 */
+/** all 跨 user 与 project 两个 scope 检索 */
 export function resolveMemoryScope(
   scope: "project" | "all",
   containerTag: string

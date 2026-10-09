@@ -1,5 +1,23 @@
-// memory 工具：dsh 宿主注册的多模式记忆工具
-// 契约：defineTool(name/description/parameters/output)，execute(args, exec) 返回 canonical value
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// memory 工具：宿主注册的多模式记忆工具
+// 契约：defineTool 传 name 与 description 与 parameters 与 output，execute 返回 canonical value
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import type { ToolRunContext } from "@deepseek-ai/dsh-tools";
 import { getConfig } from "../config.js";
@@ -14,24 +32,21 @@ type MemoryMode = (typeof MEMORY_MODES)[number];
 
 export interface MemoryToolDeps {
   memoryClient: MemoryClientLike & Partial<PortabilityMethods>;
-  /** 装配时的兜底 tags（工具执行时应优先用 getActiveTags） */
+  /** 装配时兜底 tags，执行时应优先用 getActiveTags */
   tags: TagsLike;
-  /**
-   * 活跃 tags 提供者：项目身份跟随会话工作区（session.header.cwd），而非进程 cwd。
-   * 可传 overrideDirectory 精确指定（工具执行时传 exec 携带的会话 cwd）。
-   */
+  /** 活跃 tags 提供者，项目身份跟随会话工作区 */
   getActiveTags?: (overrideDirectory?: string) => TagsLike;
   profileManager: UserProfileManagerLike;
-  /** 装配时的兜底工作区目录（可携性模式应优先用 getActiveDirectory） */
+  /** 装配时兜底工作区目录，可携性模式应优先用 getActiveDirectory */
   directory: string;
   /**
-   * 活跃工作区目录提供者：与 getActiveTags 同源（会话工作区优先）。
-   * 可携性四模式（list-shards/migrate/export/import）依赖它，否则会认成装配目录。
+   * 活跃工作区目录提供者，与 getActiveTags 同源。
+   * 可携性四模式依赖它，否则会认成装配目录
    */
   getActiveDirectory?: (overrideDirectory?: string) => string;
 }
 
-/** 可携性四模式依赖的客户端方法（core 的 LocalMemoryClient 实现；结构化可选，缺失时运行时报错） */
+/** 可携性四模式依赖的客户端方法，缺失时给可行动的报错 */
 export interface PortabilityMethods {
   listShards(currentDirectory: string): Promise<{
     success: boolean;
@@ -99,7 +114,7 @@ interface MemoryArgs {
   allowLinkedSource?: boolean;
 }
 
-/** 规范输出值：工具 output.schema 约束（additionalProperties: true 要求索引签名兼容） */
+/** output.schema 要求 additionalProperties 兼容，故带索引签名 */
 type JsonValue = import("@deepseek-ai/dsh-util-values").JsonValue;
 type MemoryToolValue = {
   [key: string]: JsonValue;
@@ -119,14 +134,13 @@ type MemoryToolValue = {
   outputPath?: string;
 };
 
-/** 构造失败输出：undefined 字段直接剔除，保证值符合 output schema */
 function fail(mode: string, error?: string): MemoryToolValue {
   return error === undefined
     ? { success: false, mode }
     : { success: false, mode, error };
 }
 
-/** 把客户端方法返回的 result 转成 schema 合规输出：剔除 undefined，值规整为 JsonValue */
+/** 客户端返回值转 schema 合规输出，剔除 undefined */
 function fromResult(mode: string, result: Record<string, unknown>): MemoryToolValue {
   const out: Record<string, JsonValue> = {};
   for (const [key, value] of Object.entries(result)) {
@@ -196,27 +210,26 @@ export function createMemoryTool(deps: MemoryToolDeps) {
     execute: async (args: MemoryArgs, exec: ToolRunContext): Promise<MemoryToolValue> => {
       const mode: MemoryMode = args.mode ?? "help";
       const cfg = getConfig();
-      // 项目身份跟随会话工作区：工具执行时优先读 exec 携带的会话 cwd
-      // （与 dsh-tool-fs 同款规则：exec.agent.session.header.cwd），其余走宿主提供的 getActiveTags，最后兜底装配 tags
+      // 项目身份跟随会话工作区，优先读 exec 携带的会话 cwd
+      // 规则与 dsh-tool-fs 一致，其次宿主提供的 getActiveTags，最后兜底装配 tags
       const execSessionCwd = (exec as { agent?: { session?: { header?: { cwd?: string } } } }).agent?.session?.header?.cwd;
       const tags = execSessionCwd
         ? (deps.getActiveTags?.(execSessionCwd) ?? deps.tags)
         : (deps.getActiveTags?.() ?? deps.tags);
-      // 可携性模式（list-shards/migrate/export/import）用同一个活跃目录，
-      // 否则会认成装配目录（dsh 从 home 启动时就错了）
+      // 可携性模式用同一个活跃目录，否则会认成装配目录
       const activeDirectory = execSessionCwd
         ? (deps.getActiveDirectory?.(execSessionCwd) ?? execSessionCwd)
         : (deps.getActiveDirectory?.() ?? deps.directory);
 
-      // help 不依赖初始化；add/search 依赖嵌入；其余依赖存储。
-      // 未初始化的失败由 warmup/ensureStorageReady 自然抛出，不在此重复门控。
+      // help 不依赖初始化，add 与 search 依赖嵌入，其余依赖存储
+      // 未初始化的失败由 warmup 与 ensureStorageReady 自然抛出，不重复门控
       const needsEmbedding = mode === "add" || mode === "search";
       if (needsEmbedding) {
         const embeddingError = deps.memoryClient.getEmbeddingInitError();
         if (embeddingError) return { success: false, mode, error: embeddingError };
       }
 
-      // 可携性模式需要 core 客户端提供对应方法；缺失时给可行动的报错而不是 TypeError
+      // 可携性模式需要 core 客户端提供方法，缺失时给可行动的报错而非 TypeError
       const portability =
         mode === "migrate" || mode === "list-shards" || mode === "export" || mode === "import"
           ? (deps.memoryClient as Partial<PortabilityMethods>)
@@ -251,7 +264,6 @@ export function createMemoryTool(deps: MemoryToolDeps) {
         return { success: false, mode, error: `memory system failed to initialize: ${message}` };
       }
 
-      // dispose 后不再执行新调用
       if (exec.signal.aborted) return { success: false, mode, error: "aborted" };
 
       try {

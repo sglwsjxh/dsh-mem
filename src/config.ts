@@ -1,12 +1,30 @@
-// 配置加载：只读 ~/.dsh/dsh-mem.jsonc，缺失或不可解析时 stderr 报错并跳过装配
-// 刻意不做多路径探测——找得到就读，找不到就报错，方便排查
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 配置加载：只读 ~/.dsh/dsh-mem.jsonc
+// 不做多路径探测。找得到就读，找不到直接报错，方便排查
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import type { DshMemConfig } from "./types.js";
 import { parseJsonc } from "./services/jsonc.js";
 
-/** 配置唯一路径：~/.dsh/dsh-mem.jsonc */
+/** 唯一路径，不做多路径探测 */
 export const CONFIG_PATH = join(homedir(), ".dsh", "dsh-mem.jsonc");
 
 let config: DshMemConfig | null = null;
@@ -38,7 +56,7 @@ const KEY_ALIASES: Record<string, string> = {
   userprofilestaledays: "userProfileStaleDays",
 };
 
-/** 宽松读取嵌套配置段：baseurl/baseUrl、apikey/apiKey 双拼写等价 */
+/** 宽松读取嵌套配置段：baseurl 与 apikey 双拼写等价 */
 function readSection(raw: unknown): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   if (!raw || typeof raw !== "object") return out;
@@ -49,7 +67,7 @@ function readSection(raw: unknown): Record<string, unknown> {
   return out;
 }
 
-/** 用默认值填充，显式配置覆盖；类型不符的键直接忽略（不猜不救） */
+/** 默认值填充，显式配置覆盖。类型不符的键直接忽略 */
 function normalize(raw: Record<string, unknown>): DshMemConfig {
   const embedding = readSection(raw.embedding);
   const llm = readSection(raw.llm);
@@ -102,7 +120,7 @@ function normalize(raw: Record<string, unknown>): DshMemConfig {
   };
 }
 
-/** 未初始化时调用 getConfig 直接报错——fail-fast，不给默认配置兜底 */
+/** 读取配置，失败返回 null，不缓存失败结果 */
 export function initConfig(): DshMemConfig | null {
   if (config) return config;
   if (!existsSync(CONFIG_PATH)) {
@@ -117,7 +135,7 @@ export function initConfig(): DshMemConfig | null {
       config = null;
       return null;
     }
-    // dataPath 目录缺失时创建——这是一次性引导而非探测
+    // dataPath 缺失时创建。一次性引导，不做探测
     if (!existsSync(config.dataPath)) mkdirSync(config.dataPath, { recursive: true });
     return config;
   } catch (error) {

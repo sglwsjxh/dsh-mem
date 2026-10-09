@@ -1,3 +1,21 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 // 用户画像持久化：独立 SQLite 文件，含版本与变更日志
 import { connect, type Database } from "@tursodatabase/database";
 import { mkdirSync } from "node:fs";
@@ -37,7 +55,7 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles (user_id);
 CREATE INDEX IF NOT EXISTS idx_profile_changelogs_profile ON user_profile_changelogs (profile_id, version DESC);
 `;
 
-/** 描述相似度合并阈值：同义描述归并 */
+/** 描述相似度合并阈值，同义描述归并 */
 const DESCRIPTION_MERGE_THRESHOLD = 0.85;
 
 function newId(prefix: string): string {
@@ -67,7 +85,7 @@ function rowToProfile(row: Record<string, unknown>): UserProfileRecord {
   };
 }
 
-/** 文本归一化后的相似度：词集合 Jaccard，够用且零依赖 */
+/** 文本归一化后的相似度：词集合 Jaccard，零依赖 */
 function descriptionSimilarity(a: string, b: string): number {
   const tokenize = (text: string): Set<string> =>
     new Set(
@@ -104,7 +122,7 @@ function mergeItems(existing: ProfileItem[], incoming: ProfileItem[]): ProfileIt
   return out;
 }
 
-/** 陈旧条目衰减：超过 staleDays 未见则置信度打折，低于阈值移除 */
+/** 陈旧条目衰减：超期未见则置信度打折，低于阈值移除 */
 function decayItems(items: ProfileItem[], staleDays: number): ProfileItem[] {
   const cutoff = Date.now() - staleDays * 86400000;
   return items
@@ -115,7 +133,7 @@ function decayItems(items: ProfileItem[], staleDays: number): ProfileItem[] {
 export class UserProfileManager implements UserProfileManagerLike {
   private db: Database | null = null;
   private initPromise: Promise<void> | null = null;
-  /** 显式数据目录（测试注入用）；未传则首次使用时按生效配置解析 */
+  /** 显式数据目录，测试注入用；未传则首次使用时按生效配置解析 */
   private readonly explicitDataPath?: string;
   private dbPath: string | null = null;
 
@@ -207,7 +225,7 @@ export class UserProfileManager implements UserProfileManagerLike {
     return true;
   }
 
-  /** 合并画像数据：相似描述归并 + 陈旧衰减 */
+  /** 合并画像数据：相似描述归并加陈旧衰减 */
   async mergeProfileData(
     existing: UserProfileData,
     incoming: Partial<UserProfileData>,
@@ -236,7 +254,7 @@ export class UserProfileManager implements UserProfileManagerLike {
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [newId("changelog"), profileId, version, changeType, summary, JSON.stringify(snapshot), Date.now()],
       );
-      // 保留最近 N 条
+      // 保留最近若干条
       await db.run(
         `DELETE FROM user_profile_changelogs WHERE profile_id = ? AND id NOT IN (
            SELECT id FROM user_profile_changelogs WHERE profile_id = ? ORDER BY version DESC LIMIT ?

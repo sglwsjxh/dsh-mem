@@ -1,5 +1,22 @@
-// 画像学习：积累 userLearningCaptured=0 的 prompt 到阈值后 LLM 分析合并
-// 改写自 opencode-mem user-memory-learning：去掉 opencode provider 分支
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// 画像学习：攒够未分析 prompt 后 LLM 分析合并
 import { getConfig } from "../config.js";
 import type { LlmClient, ProfilePreference, UserProfileData } from "../types.js";
 import { utf8ByteLength } from "./context-limit.js";
@@ -77,7 +94,7 @@ function parseAnalysisJson(text: string): ProfileAnalysisResult | null {
   }
 }
 
-/** 内部进程互斥 + 阈值触发的画像学习主入口 */
+/** 进程互斥加阈值触发的画像学习入口 */
 export async function performUserProfileLearning(deps: ProfileLearningDeps): Promise<void> {
   const cfg = getConfig();
   if (isLearningRunning) return;
@@ -97,7 +114,7 @@ export async function performUserProfileLearning(deps: ProfileLearningDeps): Pro
     const existingData: UserProfileData | null = existingProfile ? JSON.parse(existingProfile.profileData) : null;
 
     const context = buildUserAnalysisContext(prompts, existingData);
-    // 语言由 LLM 依据用户输入自行跟随，不做本地语言检测
+    // 语言由 LLM 跟随用户输入，不做本地检测
     const systemPrompt = ANALYSIS_SYSTEM_PROMPT.replace(
       "in the language specified below",
       "in the same language as the user input",
@@ -161,7 +178,7 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-/** 供 memory 工具 profile 写路径使用的显式偏好写入 */
+/** 供 memory 工具画像写路径使用的显式偏好写入 */
 export async function mergeExplicitPreference(
   deps: ProfileLearningDeps,
   userId: string,

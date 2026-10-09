@@ -1,3 +1,20 @@
+/**
+ * dsh-mem
+ *
+ * Copyright (C) 2026 dsh-mem contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 // 存储层单测：向量往返、分片轮换、写锁、会话检索（临时目录，不碰真实 ./data）
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -5,7 +22,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Embedder } from "../src/types.js";
 
-// config mock：dataPath 指向临时目录
+// config mock 指向临时目录
 const testCfg = {
   dataPath: "",
   embedding: { model: "test-model", dimensions: 8 },
@@ -27,7 +44,7 @@ const { LocalMemoryClient } = await import("../src/services/memory-client.js");
 const { tursoShardManager } = await import("../src/services/turso/shard-manager.js");
 const { getProjectTagInfo, getUserTagInfo } = await import("../src/services/tags.js");
 
-// 确定性嵌入：同文本同向量，归一化
+// 确定性嵌入，同文本同向量
 function seededVector(text: string): Float32Array {
   const dims = testCfg.embedding.dimensions;
   const v = new Float32Array(dims);
